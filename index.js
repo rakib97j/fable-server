@@ -43,7 +43,6 @@ async function run() {
     });
 
     // Manage Ebooks api for writer
-
     app.get("/api/e-books/writer/:writerId", async (req, res) => {
       const writerId = req.params.writerId;
       const query = { writerId: writerId };
@@ -51,6 +50,23 @@ async function run() {
       const result = await eBooksCollection.find(query).toArray();
       res.send(result);
     });
+
+
+    app.get('/api/e-books/random', async (req, res) => {
+    try {
+        const result = await eBooksCollection.aggregate([
+            { $sample: { size: 4 } } // ডাটাবেজ থেকে র‍্যান্ডম ৪টি ডকুমেন্ট দেবে
+        ]).toArray();
+
+        res.send(result);
+    } catch (error) {
+        res.status(500).send({ message: "Random books fetch করতে সমস্যা হয়েছে", error });
+    }
+});
+
+
+
+
 
     await client.db("admin").command({ ping: 1 });
     console.log(
