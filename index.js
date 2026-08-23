@@ -1,19 +1,14 @@
 const express = require("express");
-const cors =require('cors');
+const cors = require("cors");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 require("dotenv").config();
 const app = express();
-
 
 app.use(cors());
 app.use(express.json());
 
 const port = process.env.PORT || 9090;
 const uri = process.env.MONGODB_URI;
-
-
-
-
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
@@ -27,38 +22,35 @@ const client = new MongoClient(uri, {
   },
 });
 
-
-
 async function run() {
   try {
     await client.connect();
 
     const db = client.db("fable_db");
-    const eBooksCollection = db.collection("e-books")
+    const eBooksCollection = db.collection("e-books");
 
     // ebook  post api
-    app.post('/api/e-books' , async (req ,res)=>{
-        const eBooks = req.body;
-        const result = await eBooksCollection.insertOne(eBooks);
-        res.send(result)
-    })
+    app.post("/api/e-books", async (req, res) => {
+      const eBooks = req.body;
+      const result = await eBooksCollection.insertOne(eBooks);
+      res.send(result);
+    });
 
-
-
-    
     // all-ebook get api
-    app.get('/api/e-books' ,async (req ,res) => {
-        const result =await eBooksCollection.find().toArray()
-        res.send(result)
-    })
-    
+    app.get("/api/e-books", async (req, res) => {
+      const result = await eBooksCollection.find().toArray();
+      res.send(result);
+    });
 
+    // Manage Ebooks api for writer
 
+    app.get("/api/e-books/writer/:writerId", async (req, res) => {
+      const writerId = req.params.writerId;
+      const query = { writerId: writerId };
 
-
-
-
-
+      const result = await eBooksCollection.find(query).toArray();
+      res.send(result);
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
