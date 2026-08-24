@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+// 💥 সমাধান: ObjectId ইমপোর্ট করা হলো
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const app = express();
 
@@ -29,44 +30,85 @@ async function run() {
     const db = client.db("fable_db");
     const eBooksCollection = db.collection("e-books");
 
-    // ebook  post api
+    // ebook post api
     app.post("/api/e-books", async (req, res) => {
       const eBooks = req.body;
-      const result = await eBooksCollection.insertOne(eBooks);
+      const newBook = {
+        ...eBooks,
+        status: eBooks.status || "pending", // ডিফল্ট pending সেট হবে
+      };
+      const result = await eBooksCollection.insertOne(newBook);
       res.send(result);
     });
 
-    // all-ebook get api
+    // all-ebook get api (Public Library - Published & Old Books)
     app.get("/api/e-books", async (req, res) => {
-      const result = await eBooksCollection.find().toArray();
-      res.send(result);
-    });
-
-    // Manage Ebooks api for writer
-    app.get("/api/e-books/writer/:writerId", async (req, res) => {
-      const writerId = req.params.writerId;
-      const query = { writerId: writerId };
-
+      const query = {
+        $or: [{ status: "published" }, { status: { $exists: false } }],
+      };
       const result = await eBooksCollection.find(query).toArray();
       res.send(result);
     });
 
 
-    app.get('/api/e-books/random', async (req, res) => {
-    try {
-        const result = await eBooksCollection.aggregate([
-            { $sample: { size: 4 } } // ডাটাবেজ থেকে র‍্যান্ডম ৪টি ডকুমেন্ট দেবে
-        ]).toArray();
 
-        res.send(result);
-    } catch (error) {
-        res.status(500).send({ message: "Random books fetch করতে সমস্যা হয়েছে", error });
-    }
-});
+    // for writer manage ebook
+    app.get("/api/e-books/writer/:writerId", async (req, res) => {
+      const writerId = req.params.writerId;
+      const query = { writerId: writerId };
+      const result = await eBooksCollection.find(query).toArray();
+      res.send(result);
+    });
 
+    // Admin manage e book (All status)
+    app.get("/api/admin/e-books", async (req, res) => {
+      const result = await eBooksCollection
+        .find()
+        .sort({ createdAt: -1 })
+        .toArray();
 
+      res.send(result);
+    });
 
+    // Book Details & Status Edit API (Universal Patch)
+    app.patch("/api/e-books/:id", async (req, res) => {
+      const id = req.params.id;
+      const updateData = req.body;
 
+      delete updateData._id;
+
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: updateData,
+      };
+
+      const result = await eBooksCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
+
+    // Delete Book API
+    app.delete("/api/e-books/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await eBooksCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // show random e-book on home page
+    app.get("/api/e-books/random", async (req, res) => {
+      const result = await eBooksCollection
+        .aggregate([
+          {
+            $match: {
+              $or: [{ status: "published" }, { status: { $exists: false } }],
+            },
+          },
+          { $sample: { size: 4 } },
+        ])
+        .toArray();
+
+      res.send(result);
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
