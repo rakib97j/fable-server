@@ -85,8 +85,7 @@ async function run() {
       res.send(result);
     });
 
-   
-    //  Admin mange user Api 
+    //  Admin mange user Api
     app.get("/api/users", async (req, res) => {
       const result = await UserCollection.find({
         role: { $in: ["reader", "writer"] },
@@ -95,10 +94,22 @@ async function run() {
       res.send(result);
     });
 
+    // User Role Update API 
+    app.patch("/api/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const { role } = req.body;
 
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          role: role,
+          updatedAt: new Date().toISOString(),
+        },
+      };
 
-
-    
+      const result = await UserCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
 
     // for writer manage ebook
     app.get("/api/e-books/writer/:writerId", async (req, res) => {
