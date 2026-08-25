@@ -206,7 +206,16 @@ async function run() {
       res.send(result);
     });
 
-   
+    // get api
+    app.get("/api/bookmarks/:userId", async (req, res) => {
+      const userId = req.params.userId;
+      const result = await bookmarkCollection
+        .find({ userId: userId })
+        .toArray();
+      res.send(result);
+    });
+
+  
 
     await client.db("admin").command({ ping: 1 });
     console.log(
