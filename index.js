@@ -11,7 +11,7 @@ const port = process.env.PORT || 9090;
 const uri = process.env.MONGODB_URI;
 
 app.get("/", (req, res) => {
-  res.send("Hello World!");
+  res.send("FABLE Develop By rakib97j");
 });
 
 const client = new MongoClient(uri, {
@@ -215,7 +215,20 @@ async function run() {
       res.send(result);
     });
 
-  
+    // Bookmark delete api 
+    app.delete("/api/bookmarks", async (req, res) => {
+      const { userId, bookId } = req.body;
+
+      const query = { userId: userId, bookId: bookId };
+      const result = await bookmarkCollection.deleteOne(query);
+
+      res.send(result);
+    });
+
+
+// ==========================================
+//                last
+// ==========================================
 
     await client.db("admin").command({ ping: 1 });
     console.log(
