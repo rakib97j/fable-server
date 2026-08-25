@@ -1,6 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-// 💥 সমাধান: ObjectId ইমপোর্ট করা হলো
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const app = express();
@@ -28,14 +27,29 @@ async function run() {
     await client.connect();
 
     const db = client.db("fable_db");
+
+    // Collections
     const eBooksCollection = db.collection("e-books");
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     // ebook post api
     app.post("/api/e-books", async (req, res) => {
       const eBooks = req.body;
       const newBook = {
         ...eBooks,
-        status: eBooks.status || "pending", // ডিফল্ট pending সেট হবে
+        status: eBooks.status || "pending",
       };
       const result = await eBooksCollection.insertOne(newBook);
       res.send(result);
@@ -49,6 +63,14 @@ async function run() {
       const result = await eBooksCollection.find(query).toArray();
       res.send(result);
     });
+
+    // EBook details Page 
+    
+    app.get("/api/e-books/:id" , async (req , res)=>{
+      const id =req.params.id;
+      const result = await eBooksCollection.findOne({_id: new ObjectId(id) });
+      res.send(result)
+    })
 
 
 
@@ -109,6 +131,25 @@ async function run() {
 
       res.send(result);
     });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     await client.db("admin").command({ ping: 1 });
     console.log(
