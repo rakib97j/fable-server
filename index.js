@@ -26,11 +26,32 @@ async function run() {
   try {
     await client.connect();
 
+ 
+    // * // // * //// * //// * //// * //// * //
+    ////////////////  DB ///////////////////
+    // * // // * //// * //// * //// * //// * //
+ 
     const db = client.db("fable_db");
 
-    // Collections
+    // * // // * //// * //// * //// * //// * //
+    // * // // * //// * //// * //// * //// * //
+    // * // // * //// * //// * //// * //// * //
+    ////////////  Collection //////////////
+    // * // // * //// * //// * //// * //// * //
+    // * // // * //// * //// * //// * //// * //
+    // * // // * //// * //// * //// * //// * //
     const eBooksCollection = db.collection("e-books");
     const UserCollection = db.collection("user");
+
+
+
+    // * // // * //// * //// * //// * //// * //
+    // * // // * //// * //// * //// * //// * //
+    // * // // * //// * //// * //// * //// * //
+    ////////////////  Api ///////////////////
+    // * // // * //// * //// * //// * //// * //
+    // * // // * //// * //// * //// * //// * //
+    // * // // * //// * //// * //// * //// * //
 
     // ebook post api
     app.post("/api/e-books", async (req, res) => {
@@ -75,6 +96,21 @@ async function run() {
       res.send(result);
     });
 
+
+
+
+   // * // // * //// * //// * //// * //// * //
+    // * // // * //// * //// * //// * //// * //
+    // * // // * //// * //// * //// * //// * //
+    ////////////////  Admin Api ///////////////////
+    // * // // * //// * //// * //// * //// * //
+    // * // // * //// * //// * //// * //// * //
+    // * // // * //// * //// * //// * //// * //
+
+
+
+
+
     // Admin manage e book (All status)
     app.get("/api/admin/e-books", async (req, res) => {
       const result = await eBooksCollection
@@ -94,7 +130,7 @@ async function run() {
       res.send(result);
     });
 
-    // User Role Update API 
+    // User Role Update API
     app.patch("/api/users/:id", async (req, res) => {
       const id = req.params.id;
       const { role } = req.body;
@@ -110,6 +146,30 @@ async function run() {
       const result = await UserCollection.updateOne(filter, updatedDoc);
       res.send(result);
     });
+
+    // 2. User Delete API (DELETE)
+    app.delete("/api/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+
+      const result = await UserCollection.deleteOne(query);
+      res.send(result);
+    });
+
+
+
+
+
+   
+    
+  // * // // * //// * //// * //// * //// * //
+    // * // // * //// * //// * //// * //// * //
+    // * // // * //// * //// * //// * //// * //
+    ////////////////  Writer ///////////////////
+    // * // // * //// * //// * //// * //// * //
+    // * // // * //// * //// * //// * //// * //
+    // * // // * //// * //// * //// * //// * //
+  
 
     // for writer manage ebook
     app.get("/api/e-books/writer/:writerId", async (req, res) => {
@@ -142,6 +202,16 @@ async function run() {
       const result = await eBooksCollection.deleteOne(query);
       res.send(result);
     });
+
+
+
+    // * // // * //// * //// * //// * //// * //
+    // * // // * //// * //// * //// * //// * //
+    // * // // * //// * //// * //// * //// * //
+    // * // // * //// * //// * //// * //// * //
+
+
+
 
     await client.db("admin").command({ ping: 1 });
     console.log(
