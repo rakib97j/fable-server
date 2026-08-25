@@ -30,19 +30,7 @@ async function run() {
 
     // Collections
     const eBooksCollection = db.collection("e-books");
-
-
-
-
-
-
-
-
-
-
-
-
-
+    const UserCollection = db.collection("user");
 
     // ebook post api
     app.post("/api/e-books", async (req, res) => {
@@ -64,21 +52,26 @@ async function run() {
       res.send(result);
     });
 
-    // EBook details Page 
-    
-    app.get("/api/e-books/:id" , async (req , res)=>{
-      const id =req.params.id;
-      const result = await eBooksCollection.findOne({_id: new ObjectId(id) });
-      res.send(result)
-    })
+    // show random e-book on home page
+    app.get("/api/e-books/random", async (req, res) => {
+      const result = await eBooksCollection
+        .aggregate([
+          {
+            $match: {
+              $or: [{ status: "published" }, { status: { $exists: false } }],
+            },
+          },
+          { $sample: { size: 4 } },
+        ])
+        .toArray();
 
+      res.send(result);
+    });
 
-
-    // for writer manage ebook
-    app.get("/api/e-books/writer/:writerId", async (req, res) => {
-      const writerId = req.params.writerId;
-      const query = { writerId: writerId };
-      const result = await eBooksCollection.find(query).toArray();
+    // EBook details Page
+    app.get("/api/e-books/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await eBooksCollection.findOne({ _id: new ObjectId(id) });
       res.send(result);
     });
 
@@ -89,6 +82,29 @@ async function run() {
         .sort({ createdAt: -1 })
         .toArray();
 
+      res.send(result);
+    });
+
+   
+    //  Admin mange user Api 
+    app.get("/api/users", async (req, res) => {
+      const result = await UserCollection.find({
+        role: { $in: ["reader", "writer"] },
+      }).toArray();
+
+      res.send(result);
+    });
+
+
+
+
+    
+
+    // for writer manage ebook
+    app.get("/api/e-books/writer/:writerId", async (req, res) => {
+      const writerId = req.params.writerId;
+      const query = { writerId: writerId };
+      const result = await eBooksCollection.find(query).toArray();
       res.send(result);
     });
 
@@ -115,41 +131,6 @@ async function run() {
       const result = await eBooksCollection.deleteOne(query);
       res.send(result);
     });
-
-    // show random e-book on home page
-    app.get("/api/e-books/random", async (req, res) => {
-      const result = await eBooksCollection
-        .aggregate([
-          {
-            $match: {
-              $or: [{ status: "published" }, { status: { $exists: false } }],
-            },
-          },
-          { $sample: { size: 4 } },
-        ])
-        .toArray();
-
-      res.send(result);
-    });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     await client.db("admin").command({ ping: 1 });
     console.log(
