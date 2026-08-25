@@ -26,32 +26,22 @@ async function run() {
   try {
     await client.connect();
 
- 
-    // * // // * //// * //// * //// * //// * //
-    ////////////////  DB ///////////////////
-    // * // // * //// * //// * //// * //// * //
- 
+    // ==========================================
+    //               DataBase
+    // ==========================================
+
     const db = client.db("fable_db");
 
-    // * // // * //// * //// * //// * //// * //
-    // * // // * //// * //// * //// * //// * //
-    // * // // * //// * //// * //// * //// * //
-    ////////////  Collection //////////////
-    // * // // * //// * //// * //// * //// * //
-    // * // // * //// * //// * //// * //// * //
-    // * // // * //// * //// * //// * //// * //
+    // ==========================================
+    //                collection
+    // ==========================================
     const eBooksCollection = db.collection("e-books");
     const UserCollection = db.collection("user");
+    const bookmarkCollection = db.collection("bookmarks");
 
-
-
-    // * // // * //// * //// * //// * //// * //
-    // * // // * //// * //// * //// * //// * //
-    // * // // * //// * //// * //// * //// * //
-    ////////////////  Api ///////////////////
-    // * // // * //// * //// * //// * //// * //
-    // * // // * //// * //// * //// * //// * //
-    // * // // * //// * //// * //// * //// * //
+    // ==========================================
+    //               All APIs
+    // ==========================================
 
     // ebook post api
     app.post("/api/e-books", async (req, res) => {
@@ -96,20 +86,9 @@ async function run() {
       res.send(result);
     });
 
-
-
-
-   // * // // * //// * //// * //// * //// * //
-    // * // // * //// * //// * //// * //// * //
-    // * // // * //// * //// * //// * //// * //
-    ////////////////  Admin Api ///////////////////
-    // * // // * //// * //// * //// * //// * //
-    // * // // * //// * //// * //// * //// * //
-    // * // // * //// * //// * //// * //// * //
-
-
-
-
+    // ==========================================
+    //               Admin APIs
+    // ==========================================
 
     // Admin manage e book (All status)
     app.get("/api/admin/e-books", async (req, res) => {
@@ -156,20 +135,9 @@ async function run() {
       res.send(result);
     });
 
-
-
-
-
-   
-    
-  // * // // * //// * //// * //// * //// * //
-    // * // // * //// * //// * //// * //// * //
-    // * // // * //// * //// * //// * //// * //
-    ////////////////  Writer ///////////////////
-    // * // // * //// * //// * //// * //// * //
-    // * // // * //// * //// * //// * //// * //
-    // * // // * //// * //// * //// * //// * //
-  
+    // ==========================================
+    //               Writer APIs
+    // ==========================================
 
     // for writer manage ebook
     app.get("/api/e-books/writer/:writerId", async (req, res) => {
@@ -203,15 +171,42 @@ async function run() {
       res.send(result);
     });
 
+ 
 
+    // ==========================================
+    //               Bookmark APIs
+    // ==========================================
 
-    // * // // * //// * //// * //// * //// * //
-    // * // // * //// * //// * //// * //// * //
-    // * // // * //// * //// * //// * //// * //
-    // * // // * //// * //// * //// * //// * //
+    // Add to book mark DB
+    app.post("/api/bookmarks", async (req, res) => {
+      const { userId, book } = req.body;
 
+      const existingBookmark = await bookmarkCollection.findOne({
+        userId: userId,
+        bookId: book._id,
+      });
 
+      if (existingBookmark) {
+        return res.status(400).send({ message: "Already bookmarked!" });
+      }
 
+      const newBookmark = {
+        userId: userId,
+        bookId: book._id,
+        title: book.title,
+        writerName: book.writerName,
+        coverImage: book.coverImage,
+        genre: book.genre,
+        price: book.price,
+        isFree: book.isFree,
+        createdAt: new Date().toISOString(),
+      };
+
+      const result = await bookmarkCollection.insertOne(newBookmark);
+      res.send(result);
+    });
+
+   
 
     await client.db("admin").command({ ping: 1 });
     console.log(
