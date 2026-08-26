@@ -93,6 +93,7 @@ async function run() {
       res.send(result);
     });
 
+  
 
      // Only Writers show API
     app.get("/api/users/randomWriters", async (req, res) => {
@@ -103,6 +104,34 @@ async function run() {
 
       res.send(result);
     });
+
+
+    // Writer Details API (Profile + All Books)
+app.get("/api/users/writers/:id", async (req, res) => {
+  const id = req.params.id;
+
+  const result = await UserCollection.aggregate([
+    { 
+     
+      $match: { _id: new ObjectId(id), role: "writer" } 
+    },
+    {
+     
+      $lookup: {
+        from: "e-books",             
+        localField: "email",        
+        foreignField: "writerEmail",
+        as: "publishedBooks",       
+      },
+    },
+  ]).toArray();
+
+  if (result.length === 0) {
+    return res.status(404).send({ message: "Writer not found" });
+  }
+
+  res.send(result[0]);
+});
 
 
 
