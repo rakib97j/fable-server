@@ -38,6 +38,7 @@ async function run() {
     const eBooksCollection = db.collection("e-books");
     const UserCollection = db.collection("user");
     const bookmarkCollection = db.collection("bookmarks");
+    const paymentCollection = db.collection("payment");
 
     // ==========================================
     //               All APIs
@@ -86,16 +87,13 @@ async function run() {
       res.send(result);
     });
 
-
     // App writer API
     app.get("/api/users/writers", async (req, res) => {
       const result = await UserCollection.find({ role: "writer" }).toArray();
       res.send(result);
     });
 
-  
-
-     // Only Writers show API
+    // Only Writers show API
     app.get("/api/users/randomWriters", async (req, res) => {
       const result = await UserCollection.aggregate([
         { $match: { role: "writer" } },
@@ -105,35 +103,30 @@ async function run() {
       res.send(result);
     });
 
-
     // Writer Details API (Profile + All Books)
-app.get("/api/users/writers/:id", async (req, res) => {
-  const id = req.params.id;
+    app.get("/api/users/writers/:id", async (req, res) => {
+      const id = req.params.id;
 
-  const result = await UserCollection.aggregate([
-    { 
-     
-      $match: { _id: new ObjectId(id), role: "writer" } 
-    },
-    {
-     
-      $lookup: {
-        from: "e-books",             
-        localField: "email",        
-        foreignField: "writerEmail",
-        as: "publishedBooks",       
-      },
-    },
-  ]).toArray();
+      const result = await UserCollection.aggregate([
+        {
+          $match: { _id: new ObjectId(id), role: "writer" },
+        },
+        {
+          $lookup: {
+            from: "e-books",
+            localField: "email",
+            foreignField: "writerEmail",
+            as: "publishedBooks",
+          },
+        },
+      ]).toArray();
 
-  if (result.length === 0) {
-    return res.status(404).send({ message: "Writer not found" });
-  }
+      if (result.length === 0) {
+        return res.status(404).send({ message: "Writer not found" });
+      }
 
-  res.send(result[0]);
-});
-
-
+      res.send(result[0]);
+    });
 
     // ==========================================
     //               Admin APIs
@@ -195,7 +188,6 @@ app.get("/api/users/writers/:id", async (req, res) => {
       const result = await eBooksCollection.find(query).toArray();
       res.send(result);
     });
-
 
     // Book Details & Status Edit API (Universal Patch)
     app.patch("/api/e-books/:id", async (req, res) => {
@@ -272,6 +264,24 @@ app.get("/api/users/writers/:id", async (req, res) => {
 
       res.send(result);
     });
+
+    // ==========================================
+    //                Payment
+    // ==========================================
+
+    app.post("/api/payment"  , async (req ,res ) =>{
+      const data =req.body;
+      const payInfo ={
+        ...data ,
+        createdAt: new Date()
+      }
+
+      const result = await paymentCollection.insertOne(payInfo);
+      res.send(result)
+    })
+
+
+
 
     // ==========================================
     //                last
