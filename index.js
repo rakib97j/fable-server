@@ -147,6 +147,16 @@ async function run() {
       res.send(result);
     });
 
+    // Only Writers show API
+    app.get("/api/users/randomWriters", async (req, res) => {
+      const result = await UserCollection.aggregate([
+        { $match: { role: "writer" } },
+        { $sample: { size: 3 } },
+      ]).toArray();
+
+      res.send(result);
+    });
+
     // Book Details & Status Edit API (Universal Patch)
     app.patch("/api/e-books/:id", async (req, res) => {
       const id = req.params.id;
@@ -170,8 +180,6 @@ async function run() {
       const result = await eBooksCollection.deleteOne(query);
       res.send(result);
     });
-
- 
 
     // ==========================================
     //               Bookmark APIs
@@ -206,7 +214,7 @@ async function run() {
       res.send(result);
     });
 
-    // get api
+    // get api by UserId
     app.get("/api/bookmarks/:userId", async (req, res) => {
       const userId = req.params.userId;
       const result = await bookmarkCollection
@@ -215,7 +223,7 @@ async function run() {
       res.send(result);
     });
 
-    // Bookmark delete api 
+    // Bookmark delete api
     app.delete("/api/bookmarks", async (req, res) => {
       const { userId, bookId } = req.body;
 
@@ -225,10 +233,9 @@ async function run() {
       res.send(result);
     });
 
-
-// ==========================================
-//                last
-// ==========================================
+    // ==========================================
+    //                last
+    // ==========================================
 
     await client.db("admin").command({ ping: 1 });
     console.log(
