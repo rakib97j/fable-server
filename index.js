@@ -86,6 +86,26 @@ async function run() {
       res.send(result);
     });
 
+
+    // App writer API
+    app.get("/api/users/writers", async (req, res) => {
+      const result = await UserCollection.find({ role: "writer" }).toArray();
+      res.send(result);
+    });
+
+
+     // Only Writers show API
+    app.get("/api/users/randomWriters", async (req, res) => {
+      const result = await UserCollection.aggregate([
+        { $match: { role: "writer" } },
+        { $sample: { size: 3 } },
+      ]).toArray();
+
+      res.send(result);
+    });
+
+
+
     // ==========================================
     //               Admin APIs
     // ==========================================
@@ -147,15 +167,6 @@ async function run() {
       res.send(result);
     });
 
-    // Only Writers show API
-    app.get("/api/users/randomWriters", async (req, res) => {
-      const result = await UserCollection.aggregate([
-        { $match: { role: "writer" } },
-        { $sample: { size: 3 } },
-      ]).toArray();
-
-      res.send(result);
-    });
 
     // Book Details & Status Edit API (Universal Patch)
     app.patch("/api/e-books/:id", async (req, res) => {
