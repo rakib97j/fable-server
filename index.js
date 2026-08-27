@@ -269,19 +269,25 @@ async function run() {
     //                Payment
     // ==========================================
 
-    app.post("/api/payment"  , async (req ,res ) =>{
-      const data =req.body;
-      const payInfo ={
-        ...data ,
-        createdAt: new Date()
-      }
+    // payment details post api
+    app.post("/api/payment", async (req, res) => {
+      const data = req.body;
+      const payInfo = {
+        ...data,
+        createdAt: new Date(),
+      };
 
       const result = await paymentCollection.insertOne(payInfo);
-      res.send(result)
-    })
+      res.send(result);
+    });
 
 
-
+    // Payment history for Admin 
+    app.get("/api/admin/payments", async (req, res) => {
+      // const email = req.params.email;
+      const result = await paymentCollection.find().toArray();
+      res.send(result);
+    });
 
     // ==========================================
     //                last
