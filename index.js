@@ -380,6 +380,123 @@ app.get("/api/purchases/:userId", async (req, res) => {
 });
 
 
+// ==========================================
+//          Writer Sales History
+// ==========================================
+
+app.get("/api/sales/:writerId", async (req, res) => {
+  const writerId = req.params.writerId;
+
+  const result = await paymentCollection
+    .aggregate([
+      
+      {
+        $match: {
+          status: "paid",
+          type: "ebook",
+        },
+      },
+
+      
+      {
+        $lookup: {
+          from: "e-books",
+          let: {
+            ebookObjectId: {
+              $convert: {
+                input: "$ebookId",
+                to: "objectId",
+                onError: null,
+                onNull: null,
+              },
+            },
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ["$_id", "$$ebookObjectId"],
+                },
+              },
+            },
+          ],
+          as: "ebook",
+        },
+      },
+
+      {
+        $unwind: "$ebook",
+      },
+
+      
+      {
+        $match: {
+          "ebook.writerId": writerId,
+        },
+      },
+
+     
+      {
+        $lookup: {
+          from: "user",
+          let: {
+            buyerObjectId: {
+              $convert: {
+                input: "$userId",
+                to: "objectId",
+                onError: null,
+                onNull: null,
+              },
+            },
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ["$_id", "$$buyerObjectId"],
+                },
+              },
+            },
+          ],
+          as: "buyer",
+        },
+      },
+
+      {
+        $unwind: {
+          path: "$buyer",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      
+      {
+        $sort: {
+          createdAt: -1,
+        },
+      },
+
+      {
+        $project: {
+          _id: 1,
+
+          ebookId: 1,
+          ebookTitle: "$ebook.title",
+
+          buyerName: "$buyer.name",
+          buyerEmail: "$userEmail",
+
+          purchaseDate: "$createdAt",
+          amount: 1,
+          currency: 1,
+          status: 1,
+        },
+      },
+    ])
+    .toArray();
+
+  res.send(result);
+});
 
 
 
