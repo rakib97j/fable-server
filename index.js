@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 require("dotenv").config();
 const app = express();
 
@@ -21,6 +22,33 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+
+
+
+const JWKS = createRemoteJWKSet(
+  new URL(`${process.env.NEXT_PUBLIC_URL}/api/auth/jwks`)
+)
+
+
+const verifyToken =async (req ,res ,next) =>{
+  const  authHeader = req?.headers.authorization;
+  if(!authHeader){
+    return res.status(401).json({massage : "Unauthorized"})
+  }
+  const token = authHeader.split(" ")[1];
+   if(!token){
+    return res.status(401).json({massage : "Unauthorized"})
+  }
+
+  try {
+    const {payload} = await jwtVerify(token ,JWKS)
+  
+    next()
+  } catch (error) {
+    return res.status(403).json({massage : "Forbidden"})
+  }
+
+}
 
 async function run() {
   try {
@@ -45,7 +73,7 @@ async function run() {
     // ==========================================
 
     // ebook post api
-    app.post("/api/e-books", async (req, res) => {
+    app.post("/api/e-books",  verifyToken, async (req, res) => {
       const eBooks = req.body;
       const newBook = {
         ...eBooks,
@@ -56,7 +84,7 @@ async function run() {
     });
 
     // all-ebook get api (Public Library - Published & Old Books)
-    app.get("/api/e-books", async (req, res) => {
+    app.get("/api/e-books",verifyToken, async (req, res) => {
       const query = {
         $or: [{ status: "published" }, { status: { $exists: false } }],
       };
@@ -65,7 +93,7 @@ async function run() {
     });
 
     // show random e-book on home page
-    app.get("/api/e-books/random", async (req, res) => {
+    app.get("/api/e-books/random",verifyToken, async (req, res) => {
       const result = await eBooksCollection
         .aggregate([
           {
@@ -81,7 +109,7 @@ async function run() {
     });
 
     // EBook details Page
-    app.get("/api/e-books/:id", async (req, res) => {
+    app.get("/api/e-books/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
       const result = await eBooksCollection.findOne({ _id: new ObjectId(id) });
       res.send(result);
@@ -132,8 +160,8 @@ async function run() {
     //               Admin APIs
     // ==========================================
 
-    // Admin manage e book (All status)
-    app.get("/api/admin/e-books", async (req, res) => {
+    // Admin manage e book (All status) 
+    app.get("/api/admin/e-books",verifyToken, async (req, res) => {
       const result = await eBooksCollection
         .find()
         .sort({ createdAt: -1 })
@@ -143,7 +171,7 @@ async function run() {
     });
 
     //  Admin mange user Api
-    app.get("/api/users", async (req, res) => {
+    app.get("/api/users",verifyToken, async (req, res) => {
       const result = await UserCollection.find({
         role: { $in: ["reader", "writer"] },
       }).toArray();
@@ -152,7 +180,7 @@ async function run() {
     });
 
     // User Role Update API
-    app.patch("/api/users/:id", async (req, res) => {
+    app.patch("/api/users/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const { role } = req.body;
 
@@ -168,8 +196,8 @@ async function run() {
       res.send(result);
     });
 
-    // 2. User Delete API (DELETE)
-    app.delete("/api/users/:id", async (req, res) => {
+    // 2. User Delete API 
+    app.delete("/api/users/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
 
@@ -182,7 +210,7 @@ async function run() {
     // ==========================================
 
     // for writer manage ebook
-    app.get("/api/e-books/writer/:writerId", async (req, res) => {
+    app.get("/api/e-books/writer/:writerId",verifyToken, async (req, res) => {
       const writerId = req.params.writerId;
       const query = { writerId: writerId };
       const result = await eBooksCollection.find(query).toArray();
@@ -190,7 +218,7 @@ async function run() {
     });
 
     // Book Details & Status Edit API (Universal Patch)
-    app.patch("/api/e-books/:id", async (req, res) => {
+    app.patch("/api/e-books/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
       const updateData = req.body;
 
@@ -206,7 +234,7 @@ async function run() {
     });
 
     // Delete Book API
-    app.delete("/api/e-books/:id", async (req, res) => {
+    app.delete("/api/e-books/:id",verifyToken,  async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await eBooksCollection.deleteOne(query);
@@ -218,7 +246,7 @@ async function run() {
     // ==========================================
 
     // Add to book mark DB
-    app.post("/api/bookmarks", async (req, res) => {
+    app.post("/api/bookmarks",verifyToken, async (req, res) => {
       const { userId, book } = req.body;
 
       const existingBookmark = await bookmarkCollection.findOne({
@@ -247,7 +275,7 @@ async function run() {
     });
 
     // get api by UserId
-    app.get("/api/bookmarks/:userId", async (req, res) => {
+    app.get("/api/bookmarks/:userId",verifyToken, async (req, res) => {
       const userId = req.params.userId;
       const result = await bookmarkCollection
         .find({ userId: userId })
@@ -256,7 +284,7 @@ async function run() {
     });
 
     // Bookmark delete api
-    app.delete("/api/bookmarks", async (req, res) => {
+    app.delete("/api/bookmarks",verifyToken, async (req, res) => {
       const { userId, bookId } = req.body;
 
       const query = { userId: userId, bookId: bookId };
@@ -270,7 +298,7 @@ async function run() {
     // ==========================================
 
     // payment details post api
-    app.post("/api/payment", async (req, res) => {
+    app.post("/api/payment",verifyToken, async (req, res) => {
       const data = req.body;
       const payInfo = {
         ...data,
@@ -285,7 +313,7 @@ async function run() {
 // ==========================================
 //          Payments History For Admin
 // ==========================================
-    app.get("/api/admin/payments", async (req, res) => {
+    app.get("/api/admin/payments",verifyToken, async (req, res) => {
       // const email = req.params.email;
       const result = await paymentCollection.find().toArray();
       res.send(result);
@@ -297,7 +325,7 @@ async function run() {
 // ==========================================
 
 
-app.get("/api/purchases/:userId", async (req, res) => {
+app.get("/api/purchases/:userId", verifyToken, async (req, res) => {
   const userId = req.params.userId;
 
   const result = await paymentCollection
@@ -384,7 +412,7 @@ app.get("/api/purchases/:userId", async (req, res) => {
 //          Writer Sales History
 // ==========================================
 
-app.get("/api/sales/:writerId", async (req, res) => {
+app.get("/api/sales/:writerId",verifyToken, async (req, res) => {
   const writerId = req.params.writerId;
 
   const result = await paymentCollection
