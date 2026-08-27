@@ -282,12 +282,107 @@ async function run() {
     });
 
 
-    // Payment history for Admin 
+// ==========================================
+//          Payments History For Admin
+// ==========================================
     app.get("/api/admin/payments", async (req, res) => {
       // const email = req.params.email;
       const result = await paymentCollection.find().toArray();
       res.send(result);
     });
+
+
+// ==========================================
+//           Reader History Api
+// ==========================================
+
+
+app.get("/api/purchases/:userId", async (req, res) => {
+  const userId = req.params.userId;
+
+  const result = await paymentCollection
+    .aggregate([
+      {
+        $match: {
+          userId: userId,
+          status: "paid",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "e-books",
+          let: {
+            ebookObjectId: {
+              $convert: {
+                input: "$ebookId",
+                to: "objectId",
+                onError: null,
+                onNull: null,
+              },
+            },
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ["$_id", "$$ebookObjectId"],
+                },
+              },
+            },
+          ],
+          as: "ebook",
+        },
+      },
+
+      {
+        $unwind: "$ebook",
+      },
+
+      {
+        $sort: {
+          createdAt: -1,
+        },
+      },
+
+      {
+        $project: {
+          _id: 1,
+
+          // Payment information
+          userId: 1,
+          userEmail: 1,
+          amount: 1,
+          currency: 1,
+          paymentMethod: 1,
+          status: 1,
+          createdAt: 1,
+          sessionId: 1,
+
+          // Ebook information
+          ebookId: 1,
+          title: "$ebook.title",
+          writerName: "$ebook.writerName",
+          writerEmail: "$ebook.writerEmail",
+          writerId: "$ebook.writerId",
+          genre: "$ebook.genre",
+          price: "$ebook.price",
+          isFree: "$ebook.isFree",
+          description: "$ebook.description",
+          coverImage: "$ebook.coverImage",
+          ebookStatus: "$ebook.status",
+        },
+      },
+    ])
+    .toArray();
+
+  res.send(result);
+});
+
+
+
+
+
 
     // ==========================================
     //                last
